@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>HTML5 Poisson Image Editing</title>
+</head>
+<body>
+
+<h1> Merge your face into an other one.</h1>
+<h2> Work in progress</h1>
+<h3>Please turn your camera on, before to proceed!</h3>
+
+<div>
+<button id="snap">Snap Photo</button>
+<button id="ReloadButton">Reload</button>
+<button id="BlendButton">blend</button>
+<button id="IterateButton">iterate</button>
+<button id="PasteButton">paste</button>
+<button id="ResetButton">reset</button>
+</div>
+
+
+<div>
+<video id="video" width="320" height="240" autoplay></video>
+<canvas id="c" width="320" height="240"></canvas>
+<img id="Dst" src="hubot.png" width="320" height="240" hidden/>
+<img id="Src" src="no.png" width="320" height="240" />
+<img id="Mask" src="mask.png" width="320" height="240" hidden/>
+</div>
+
+<canvas id="Result" width="320" height="240"></canvas>
+<canvas id="canvas" width="320" height="240" hidden></canvas>
+
+<p>
+Poisson lib for the merge is taken here : http://rest-term.com/labs/html5/poisson.html
+</p>
+
+<script type="text/javascript">
+// Put event listeners into place
+window.addEventListener("DOMContentLoaded", function() {
+    // Grab elements, create settings, etc.$
+    var canvas = document.getElementById("canvas"),
+        src_image = document.getElementById("Src"),
+        context = canvas.getContext("2d"),
+        video = document.getElementById("video"),
+        videoObj = { "video": true },
+        errBack = function(error) {
+            console.log("Video capture error: ", error.code); 
+        };
+
+    // Put video listeners into place
+    if(navigator.getUserMedia) { // Standard
+        navigator.getUserMedia(videoObj, function(stream) {
+            video.src = stream;
+            video.play();
+        }, errBack);
+    } else if(navigator.webkitGetUserMedia) { // WebKit-prefixed
+        navigator.webkitGetUserMedia(videoObj, function(stream){
+            video.src = window.webkitURL.createObjectURL(stream);
+            video.play();
+        }, errBack);
+    }
+    else if(navigator.mozGetUserMedia) { // Firefox-prefixed
+        navigator.mozGetUserMedia(videoObj, function(stream){
+            video.src = window.URL.createObjectURL(stream);
+            video.play();
+        }, errBack);
+    }
+
+    // Trigger photo take
+    document.getElementById("snap").addEventListener("click", function() {
+        context.drawImage(video, 0, 0, 320, 240);
+        src_image.src = canvas.toDataURL("image/png");
+    });
+
+    var v = video;
+    var canvas2 = document.getElementById('c');
+    var context2 = canvas2.getContext('2d');
+    var back = document.createElement('canvas');
+    var backcontext = back.getContext('2d');
+    var mask = document.createElement('canvas');
+    var maskcontext = mask.getContext('2d');
+    var cw,ch;
+    var mask_img = document.getElementById('Mask');
+    cw = v.clientWidth;
+    ch = v.clientHeight;
+    maskcontext.drawImage(mask_img,0,0,cw,ch);
+
+    v.addEventListener('play', function(){
+        cw = v.clientWidth;
+        ch = v.clientHeight;
+        canvas2.width = cw;
+        canvas2.height = ch;
+        back.width = cw;
+        back.height = ch;
+        //draw(v,context2,backcontext,cw,ch);
+        draw(v,context2,backcontext,maskcontext,cw,ch);
+    }, false);
+
+    function draw(v,c,bc,mc,w,h) {
+        if(v.paused || v.ended) return false;
+        // First, draw it into the backing canvas
+        bc.drawImage(v,0,0,w,h);
+        mask_img = document.getElementById('Mask');
+        mc.drawImage(mask_img,0,0,cw,ch);
+        // Grab the pixel data from the backing canvas
+        var idata = bc.getImageData(0,0,w,h);
+        var data = idata.data;
+        var imask = mc.getImageData(0,0,w,h);
+        var mask_data = imask.data;
+        // Loop through the pixels, turning them grayscale
+        
+        for(var i = 0; i < data.length; i+=4) {
+            var r = data[i];
+            var g = data[i+1];
+            var b = data[i+2];
+            var brightness = (3*r+4*g+b)>>>3;
+            if (1) {
+                data[i] = brightness;
+                data[i+1] = brightness;
+                data[i+2] = brightness;
+            } else {
+               data[i] = 255;
+               data[i+1] = 0;
+               data[i+2] = 0;
+            }
+        }
+        idata.data = data;
+        // Draw the pixels onto the visible canvas
+        c.putImageData(idata,0,0);
+        c.globalAlpha = 0.5;
+        c.drawImage(mask_img,0,0,cw,ch);
+        // Start over!
+        setTimeout(function(){ draw(v,c,bc,mc,w,h); }, 0);
+    }
+
+    
+}, false);
+/*
+setInterval(function(){
+    $( "#snap" ).trigger( "click" );
+    //window.setTimeout(function(){
+        $( "#ReloadButton" ).trigger( "click" );
+        window.setTimeout(function(){
+            $( "#BlendButton" ).trigger( "click" );
+        },1);
+    //},1);
+},1000);
+*/
+</script>
+
+<script src="jquery.min.js"></script>
+<script src="poisson.js"></script>
+<script src="poisson-client.js"></script>
+
+</body>
+</html>
