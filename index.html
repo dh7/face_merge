@@ -5,6 +5,16 @@
     <meta charset="utf-8">
     <title>HTML5 Poisson Image Editing</title>
 </head>
+<style>
+.flip {
+  -moz-transform: scaleX(-1);    /* Gecko */
+  -o-transform: scaleX(-1);      /* Operah */
+  -webkit-transform: scaleX(-1); /* webkit */
+  transform: scaleX(-1);         /* standard */
+  filter: FlipH;                 /* IE 6/7/8 */
+}
+</style>
+
 <body>
 
 <h1> Merge your face into an other one.</h1>
@@ -23,9 +33,9 @@
 
 <div>
 <video id="video" width="320" height="240" autoplay></video>
-<canvas id="c" width="320" height="240"></canvas>
+<canvas id="c" width="320" height="240" class="flip"></canvas>
 <img id="Dst" src="hubot.png" width="320" height="240" hidden/>
-<img id="Src" src="no.png" width="320" height="240" />
+<img id="Src" src="no.png" width="320" height="240" class="flip"/>
 <img id="Mask" src="mask.png" width="320" height="240" hidden/>
 </div>
 
